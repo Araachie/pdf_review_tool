@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Review</title>
+<link rel="stylesheet" href="/vendor/pdf_viewer.min.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <header>
+      <select id="pdfSelect" title="Choose a PDF"></select>
+      <button id="reloadBtn" class="ghost" title="Reload PDF from disk">&#x21bb;</button>
+    </header>
+    <div id="pdfChanged" class="banner" hidden>PDF changed on disk. <button id="reloadNow">Reload</button></div>
+
+    <div class="toolbar">
+      <div class="modes">
+        <button id="modeText" class="mode active" title="Select text to comment on (T)">Text</button>
+        <button id="modeBox" class="mode" title="Draw a box over a figure/table (B)">Box</button>
+        <button id="modeCite" class="mode" title="Click citations to verify them (C)">Cite</button>
+        <button id="modeNav" class="mode" title="Read only (N)">Read</button>
+      </div>
+      <div class="zoom">
+        <button id="zoomOut" title="Zoom out">&minus;</button>
+        <span id="zoomLabel">100%</span>
+        <button id="zoomIn" title="Zoom in">+</button>
+        <button id="zoomFit" title="Fit width">Fit</button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <label><input type="checkbox" class="flt" value="draft" checked> draft</label>
+      <label><input type="checkbox" class="flt" value="submitted" checked> submitted</label>
+      <label><input type="checkbox" class="flt" value="applied"> applied</label>
+      <label><input type="checkbox" class="flt" value="rejected"> rejected</label>
+    </div>
+    <div class="filters">
+      <label title="Show only drafts and the most recently submitted request"><input type="checkbox" id="fltLatest"> latest request only</label>
+      <button id="fltHideResolved" class="tiny" title="Uncheck applied and rejected">hide resolved</button>
+      <button id="fltAll" class="tiny" title="Show every comment">show all</button>
+    </div>
+
+    <div id="comments"></div>
+
+    <footer>
+      <button id="submitBtn" class="primary">Submit drafts as revision request</button>
+      <div id="submitResult" class="result" hidden></div>
+      <div id="citeSummary" class="hint" hidden></div>
+      <details id="requestsBox">
+        <summary>Previous requests</summary>
+        <ul id="requestsList"></ul>
+      </details>
+      <div class="hint">Text mode: select text, then write the comment. Box mode: drag a rectangle over a figure or table.
+        Shortcuts: T / B / C / N modes, Esc cancel, Ctrl+Enter save.</div>
+    </footer>
+  </aside>
+
+  <main id="viewer">
+    <div id="pages"></div>
+  </main>
+
+  <aside id="citePanel" hidden>
+    <div class="cpHead">
+      <b id="cpKey">citation</b>
+      <span class="cpNav">
+        <button id="cpPrev" title="previous unverified citation">&#x2039;</button>
+        <button id="cpNext" title="next unverified citation">&#x203A;</button>
+        <button id="cpClose" title="close">&times;</button>
+      </span>
+    </div>
+    <div class="cpStatus" id="cpStatus"></div>
+    <section>
+      <h4>Reference as printed <button id="cpJump" class="tiny">jump to it</button></h4>
+      <div id="cpRef" class="cpText">…</div>
+    </section>
+    <section>
+      <h4>BibTeX entry</h4>
+      <pre id="cpBib" class="cpBib">…</pre>
+    </section>
+    <section>
+      <h4>Closest matches <span id="cpLookupState" class="muted"></span></h4>
+      <div id="cpMatches" class="cpMatches">…</div>
+      <div class="cpLinks" id="cpLinks"></div>
+    </section>
+    <section class="cpActions">
+      <button id="cpVerified" class="ok">&#10003; Verified</button>
+      <button id="cpUnclear">? Unclear</button>
+      <button id="cpFlag" class="danger">&#9873; Flag for revision</button>
+      <button id="cpReset" class="ghost" title="remove verification mark">reset</button>
+    </section>
+    <div class="hint">Verification marks are saved with the PDF's comments. Flagging opens a comment that goes into the next revision request with the BibTeX entry attached.</div>
+  </aside>
+
+  <div id="popup" hidden>
+    <div class="popupHead">
+      <span id="popupTitle">New comment</span>
+      <select id="popupCategory">
+        <option value="edit">edit</option>
+        <option value="rewrite">rewrite</option>
+        <option value="question">question</option>
+        <option value="figure">figure</option>
+        <option value="table">table</option>
+        <option value="typo">typo</option>
+        <option value="delete">delete</option>
+        <option value="citation">citation</option>
+        <option value="general">general</option>
+      </select>
+    </div>
+    <div id="popupQuote" class="quote"></div>
+    <textarea id="popupText" rows="5" placeholder="What should change here?"></textarea>
+    <div class="popupBtns">
+      <button id="popupCancel">Cancel</button>
+      <button id="popupSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

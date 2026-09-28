@@ -1,0 +1,24 @@
+{
+  "_help": [
+    "Edit this file before the first run.",
+    "root      : project root, relative to this folder (or absolute). '..' assumes",
+    "            pdf_review/ sits inside the paper repository.",
+    "pdfs[]    : one entry per PDF; 'path' is relative to root and may be a glob.",
+    "sources   : free text, copied into every revision request -- where the .tex lives.",
+    "notes     : free text, extra hints for the assistant (figures, sync rules, ...).",
+    "bib       : .bib file used by Cite mode (optional).",
+    "on_verified: instruction emitted for citations marked Verified (optional).",
+    "Entries whose file does not exist are silently ignored, so unused templates are harmless."
+  ],
+  "root": "..",
+  "pdfs": [
+    {
+      "path": "paper/main.pdf",
+      "name": "Main paper",
+      "sources": "paper/sections/",
+      "notes": "",
+      "bib": "paper/references.bib",
+      "on_verified": ""
+    }
+  ]
+}
