@@ -8,14 +8,24 @@ or similar) or a co-author can read and act on.
 The server uses only the Python 3 standard library, and the viewer uses a vendored copy of
 [pdf.js](https://mozilla.github.io/pdf.js/). There is nothing to install and no build step.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/overview-dark.webp">
+  <img src="docs/screenshots/overview.webp" alt="The review tool: comments in the sidebar, highlighted text on the PDF and comment ids in the page margin">
+</picture>
+
+<sub>The screenshots show the arXiv preprint [<i>Communication-Inspired Tokenization for Structured Image
+Representations</i>](https://arxiv.org/abs/2602.20731) (Davtyan et al., 2026,
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) with example review comments.</sub>
+
 ```
 pdf_review/
   server.py        # HTTP server + CLI (serve / list / show / resolve)
   config.json      # which PDFs to offer and where their sources live
   static/          # viewer (index.html, app.js, style.css)
-  vendor/          # pdf.js 4.10.38 (pdf.min.mjs, pdf.worker.min.mjs, pdf_viewer.min.css)
+  vendor/          # pdf.js 4.10.38 and the Inter font, both with their licenses
   data/            # <pdf-id>.json  -- all comments for a PDF (auto-saved, git-ignored)
   requests/        # <pdf-id>/<timestamp>/revision_request.md + crop PNGs (git-ignored)
+  docs/            # screenshots for this README
 ```
 
 ## Requirements
@@ -59,10 +69,18 @@ If you work on a remote machine, forward the port with `ssh -L 8765:127.0.0.1:87
 
 Esc cancels a comment and Ctrl+Enter saves it.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/box-comment-dark.webp">
+  <img src="docs/screenshots/box-comment.webp" alt="Box mode: a rectangle drawn over a figure with the new-comment popup open, and a submitted comment on the table above it">
+</picture>
+
+Each comment's id (`R1`, `R2`, …) is shown in the page margin next to its line, or on the corner of its box.
+The interface follows the system's light or dark setting; the PDF pages stay white.
+
 Each comment has a category (edit, rewrite, question, figure, table, typo, delete, citation, general),
 free text, and a status: `draft` → `submitted` → `applied` / `rejected`.
 
-The status checkboxes under the toolbar filter both the sidebar and the highlights drawn on the PDF.
+The status chips under the toolbar filter both the sidebar and the highlights drawn on the PDF.
 **hide resolved** unticks applied/rejected, **latest request only** keeps just your drafts and the most
 recently submitted request, and **show all** resets. The browser remembers your choice. Comments are
 saved automatically to `data/<pdf-id>.json`, so you can close the browser and continue later.
@@ -85,10 +103,16 @@ Press **C** or click **Cite**. Every `\cite` in the PDF becomes a hotspot. The t
   similarity with an author-overlap check and a year check, plus links to Google Scholar and similar sites,
 - **Verified / Unclear / Flag for revision** buttons and prev/next navigation over unchecked citations.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/cite-panel-dark.webp">
+  <img src="docs/screenshots/cite-panel.webp" alt="Cite mode: the citation panel with the printed reference, the BibTeX entry and the closest matches from Crossref and OpenAlex">
+</picture>
+
 Verification marks are stored with the comments in `data/<pdf-id>.json` and colour the hotspots (green /
 amber / red). **Flag for revision** creates a normal comment (category `citation`) anchored at the citation.
 When it is submitted, the revision request includes the bib key, the BibTeX entry and the printed reference,
-so the assistant can fix `references.bib` or the `\cite` command. The footer shows a running tally.
+so the assistant can fix `references.bib` or the `\cite` command. The footer shows a progress bar of
+verified, unclear and flagged citations.
 
 ### Approved citations
 
@@ -177,4 +201,6 @@ remembers the last PDF and the status filters in `localStorage` under the `pdfre
 ## License
 
 [MIT](LICENSE). The bundled [pdf.js](https://github.com/mozilla/pdf.js) files in `vendor/` are © Mozilla Foundation and
-licensed under the Apache License 2.0 (see [`vendor/LICENSE`](vendor/LICENSE)).
+licensed under the Apache License 2.0 (see [`vendor/LICENSE`](vendor/LICENSE)). The bundled
+[Inter](https://github.com/rsms/inter) font is © The Inter Project Authors and licensed under the SIL Open Font
+License 1.1 (see [`vendor/OFL-Inter.txt`](vendor/OFL-Inter.txt)).

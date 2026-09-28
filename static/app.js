@@ -186,15 +186,24 @@ async function referenceText(key) {
   const pageNum = dest.pageIndex + 1;
   const items = await pageText(pageNum);
   // all destinations on that page
-  const ys = [];
+  const dests = [];
   for (const k of state.citeOrder) {
     const dk = await citeDest(k);
-    if (dk && dk.pageIndex === dest.pageIndex && dk.y !== null) ys.push(dk.y);
+    if (dk && dk.pageIndex === dest.pageIndex && dk.y !== null) dests.push(dk);
   }
+  // multi-column bibliographies: entries of one column share their left x, so a text item belongs to the
+  // column that starts closest to its left, and the entry ends at the next destination in the same column
+  const colStarts = [];
+  for (const x of dests.map((d) => d.x).filter((x) => x !== null).sort((a, b) => a - b))
+    if (!colStarts.length || x - colStarts.at(-1) > 50) colStarts.push(x);
+  const col = (x) => colStarts.filter((s) => s <= x + 2).length;
+  const sameCol = (x) => dest.x === null || x === null || col(x) === col(dest.x);
+  const ys = dests.filter((d) => sameCol(d.x)).map((d) => d.y);
   const y0 = dest.y ?? Infinity;
   const below = ys.filter((y) => y < y0 - 1);
   const yEnd = below.length ? Math.max(...below) : -Infinity;
-  const inRange = items.filter((it) => { const y = it.transform[5]; return y <= y0 + 3 && y > yEnd + 1 && !/^\s*\d{3}\s*$/.test(it.str); });
+  const inRange = items.filter((it) => { const y = it.transform[5];
+    return y <= y0 + 3 && y > yEnd + 1 && sameCol(it.transform[4]) && !/^\s*\d{3}\s*$/.test(it.str); });
   inRange.sort((a, b) => (b.transform[5] - a.transform[5]) || (a.transform[4] - b.transform[4]));
   let text = "", lastY = null;
   for (const it of inRange) {
