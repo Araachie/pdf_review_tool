@@ -144,10 +144,18 @@ function redrawCites() { state.pages.forEach(drawCitesForPage); updateCiteSummar
 function updateCiteSummary() {
   const box = $("#citeSummary");
   const keys = state.citeOrder;
-  if (!keys.length) { box.hidden = state.pages.length === 0; box.textContent = "No citation links found in this PDF (needs hyperref)."; return; }
+  box.innerHTML = "";
+  if (!keys.length) { box.hidden = state.pages.length === 0; box.append(el("div", { class: "hint", text: "No citation links found in this PDF (needs hyperref)." })); return; }
   const n = (st) => keys.filter((k) => citeStatus(k) === st).length;
+  const counts = { verified: n("verified"), unclear: n("unclear"), flagged: n("flagged") };
+  counts.unchecked = keys.length - counts.verified - counts.unclear - counts.flagged;
   box.hidden = false;
-  box.textContent = `Citations: ${keys.length} unique · ${n("verified")} verified · ${n("unclear")} unclear · ${n("flagged")} flagged · ${keys.length - n("verified") - n("unclear") - n("flagged")} unchecked`;
+  const bar = el("div", { class: "bar" }), legend = el("div", { class: "legend" });
+  for (const [st, v] of Object.entries(counts)) {
+    if (v) bar.append(el("span", { class: st, style: `flex-grow: ${v}`, title: `${v} ${st}` }));
+    legend.append(el("span", { class: st, text: `${v} ${st}` }));
+  }
+  box.append(el("div", { class: "head" }, el("b", { text: "Citations" }), el("span", { text: `${counts.verified} of ${keys.length} verified` })), bar, legend);
 }
 
 async function pageText(pageNum) {
@@ -325,15 +333,28 @@ function jumpTo(pageNum, pdfY, rect) {
 
 function drawHighlightsForPage(P) {
   P.annLayer.innerHTML = "";
+  const used = { left: [], right: [] }; // margin tag positions, to keep tags on nearby lines from overlapping
   for (const c of visibleComments()) {
     if (c.page !== P.num) continue;
+    const st = c.status || "draft", sel = c.id === state.selectedId ? " sel" : "";
     (c.rects || []).forEach((r, k) => {
-      const h = el("div", { class: `hl ${c.kind}`, "data-status": c.status || "draft", "data-id": c.id });
+      const h = el("div", { class: `hl ${c.kind}${sel}`, "data-status": st, "data-id": c.id });
       h.style.left = `${r.x * 100}%`; h.style.top = `${r.y * 100}%`;
       h.style.width = `${r.w * 100}%`; h.style.height = `${r.h * 100}%`;
-      if (k === 0) h.append(el("span", { class: "tag", text: c.id, onclick: (e) => { e.stopPropagation(); selectComment(c.id, false); } }));
       if (c.kind === "box") h.onclick = () => selectComment(c.id, false);
       P.annLayer.append(h);
+      if (k > 0) return;
+      const tag = el("span", { class: `tag ${c.kind} ${c.kind === "box" ? "onBox" : "inMargin"}${sel}`, "data-status": st, "data-id": c.id, text: c.id,
+        onclick: (e) => { e.stopPropagation(); selectComment(c.id, false); } });
+      if (c.kind === "box") { tag.style.left = `${r.x * 100}%`; tag.style.top = `${r.y * 100}%`; }
+      else { // text tags go into the nearest page margin so they never cover the text
+        const side = r.x < 0.5 ? "left" : "right";
+        let y = r.y + r.h / 2;
+        while (used[side].some((u) => Math.abs(u - y) < 0.014)) y += 0.014;
+        used[side].push(y);
+        tag.style.top = `${y * 100}%`; tag.style[side] = "1.5%";
+      }
+      P.annLayer.append(tag);
     });
   }
 }
@@ -414,18 +435,22 @@ function renderSidebar() {
   const parts = [];
   if (drafts) parts.push(`${drafts} draft${drafts > 1 ? "s" : ""}`);
   if (cites) parts.push(`${cites} approved citation${cites > 1 ? "s" : ""}`);
-  $("#submitBtn").textContent = parts.length ? `Submit ${parts.join(" + ")} as revision request` : "Nothing to submit";
+  $("#submitBtn").textContent = parts.length ? `Submit ${parts.join(" + ")}` : "Nothing to submit";
   $("#submitBtn").disabled = !parts.length;
+  for (const chip of document.querySelectorAll(".chip[data-status]"))
+    chip.querySelector(".count").textContent = state.data.comments.filter((c) => (c.status || "draft") === chip.dataset.status).length || "";
   if (!list.length) {
     box.append(el("div", { class: "empty", text: hidden ? `${hidden} comment${hidden > 1 ? "s" : ""} hidden by filters.` : "No comments yet. Select text or draw a box on the PDF." }));
     return;
   }
   if (hidden > list.length) box.append(el("div", { class: "hint", text: `${hidden - list.length} hidden by filters` }));
   for (const c of list) {
-    const d = el("div", { class: "comment" + (c.id === state.selectedId ? " selected" : ""), "data-status": c.status || "draft", "data-id": c.id,
+    const st = c.status || "draft";
+    const d = el("div", { class: "comment" + (c.id === state.selectedId ? " selected" : ""), "data-status": st, "data-id": c.id,
       onclick: () => selectComment(c.id, true) });
-    d.append(el("div", { class: "meta" }, el("span", {}, el("b", { text: c.id }), ` · p.${c.page} · ${c.category}`), el("span", { text: c.status || "draft" })));
-    if (c.bibkey) d.append(el("div", { class: "quote", text: `\\cite{${c.bibkey}}`, title: c.reftext || "" }));
+    d.append(el("div", { class: "meta" }, el("span", { class: "cid", text: c.id }), el("span", { class: "cat", text: c.category }),
+      el("span", { text: `p.${c.page}` }), el("span", { class: "badge", text: st })));
+    if (c.bibkey) d.append(el("div", { class: "quote mono", text: `\\cite{${c.bibkey}}`, title: c.reftext || "" }));
     else if (c.quote) d.append(el("div", { class: "quote", text: c.quote, title: c.quote }));
     if (c.kind === "box" && !c.quote) d.append(el("div", { class: "quote", text: "[box region]" }));
     d.append(el("div", { class: "text", text: c.text || "" }));
@@ -445,7 +470,8 @@ function selectComment(id, scroll) {
   document.querySelectorAll(".comment").forEach((d) => d.classList.toggle("selected", d.dataset.id === id));
   const side = document.querySelector(`.comment[data-id="${id}"]`);
   if (side && !scroll) side.scrollIntoView({ block: "nearest" });
-  const hls = document.querySelectorAll(`.hl[data-id="${id}"]`);
+  document.querySelectorAll(".hl[data-id], .tag[data-id]").forEach((h) => h.classList.toggle("sel", h.dataset.id === id));
+  const hls = document.querySelectorAll(`.hl[data-id="${id}"], .tag[data-id="${id}"]`);
   if (scroll && hls[0]) hls[0].scrollIntoView({ block: "center", behavior: "smooth" });
   hls.forEach((h) => { h.classList.remove("flash"); void h.offsetWidth; h.classList.add("flash"); });
 }
@@ -454,7 +480,7 @@ function selectComment(id, scroll) {
 const popup = $("#popup");
 function showPopupAt(x, y) {
   popup.hidden = false;
-  const w = 340, h = 230;
+  const w = 340, h = 270;
   popup.style.left = `${Math.min(x, window.innerWidth - w - 10)}px`;
   popup.style.top = `${Math.min(y, window.innerHeight - h - 10)}px`;
   $("#popupText").focus();

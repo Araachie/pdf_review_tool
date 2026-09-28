@@ -67,7 +67,7 @@ The status checkboxes under the toolbar filter both the sidebar and the highligh
 recently submitted request, and **show all** resets. The browser remembers your choice. Comments are
 saved automatically to `data/<pdf-id>.json`, so you can close the browser and continue later.
 
-Click **Submit … as revision request** to write `requests/<pdf-id>/<timestamp>/revision_request.md`
+Click **Submit …** (the button says how many drafts and approved citations it will send) to write `requests/<pdf-id>/<timestamp>/revision_request.md`
 (plus `R<n>.png` crops). Drafts become `submitted`. Then click **Copy prompt for the assistant** and paste
 the prompt into the assistant chat.
 
